@@ -9,6 +9,7 @@ from novel_crawler.impl.UjNovelCrawler import UjNovelCrawler
 NovelCrawlerFactory.register_novel_crawler("ujxsw", UjNovelCrawler)
 crawler = NovelCrawlerFactory.create_novel_crawler("ujxsw")
 
+# TODO 接口和实现已经按照第二版设计大量修改，需要重新编写测试代码，这个脚本暂时无法使用
 
 async def fetch_chapters_with_semaphore(semaphore, crawler, session, catalog_url):
     async with semaphore:

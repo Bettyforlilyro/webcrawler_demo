@@ -12,29 +12,23 @@ async def main():
         keywords = ["高武纪元", "这个武圣血条太厚"]
         # 控制搜索请求并发
         semaphore = asyncio.Semaphore(5)
-        write_file_semaphore = asyncio.Semaphore(5)
         tasks = []
         for keyword in keywords:
-            tasks.append(crawler.get_novel_list_by_keyword_async(keyword, semaphore))
-        related_novels = await asyncio.gather(*tasks)
-        print(related_novels)
+            tasks.append(crawler.get_novel_list_by_keyword_async(keyword, 5, session, semaphore))
+        related_novels_list = await asyncio.gather(*tasks)
         write_file_tasks = []
-        for novel_list in related_novels:
-            flag = False
-            for novel in novel_list:
-                for keyword in keywords:
-                    if novel[0] == keyword:
-                        write_file_tasks.append(
-                            crawler.write_novel_content_to_file(novel[2], '/mnt/e/backup/novels/', write_file_semaphore)
-                        )
-                        flag = True
-                        break
-                if flag:
-                    break
+        file_path = "/mnt/e/backup/novels/"
+        real_novels_url = []
+        for novels in related_novels_list:
+            for novel in novels:
+                title, _, detail_url = novel
+                if title in keywords:
+                    real_novels_url.append(detail_url)
+        for detail_url in real_novels_url:
+            write_file_tasks.append(crawler.write_novel_content_to_file(detail_url, file_path, session, semaphore))
         await asyncio.gather(*write_file_tasks)
-        author = "辰东"
-        novels_by_author = await crawler.get_novel_list_by_author_async(author, semaphore)
-        print(novels_by_author)
+        print(novels)
+
 
 
 if __name__ == '__main__':
