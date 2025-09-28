@@ -24,6 +24,19 @@ class UjNovelCrawler(BaseNovelCrawler):
         "Content-Type": "application/x-www-form-urlencoded"
     }
 
+    async def _prepare_resources(self, session=None, semaphore=None):
+        """准备session和semaphore资源"""
+        should_close_session = False
+
+        if session is None:
+            session = aiohttp.ClientSession(headers=self.headers)
+            should_close_session = True     # 需要最后手动释放session
+
+        if semaphore is None:
+            semaphore = asyncio.Semaphore(10)   # 默认并发数
+
+        return session, semaphore, should_close_session
+
     # 请确保输入url为小说详情页的url，如《大丰打更人》的详情页url为：http://www.ujxsw.org/book/1022/
     async def get_novel_metadata_async(
             self,
@@ -31,14 +44,8 @@ class UjNovelCrawler(BaseNovelCrawler):
             session: aiohttp.ClientSession = None,
             semaphore: asyncio.Semaphore = None
     ) -> NovelMetadata:
-        # 是否在内部创建session，用于管理系统资源
-        should_close_session = False
+        session, semaphore, should_close_session = await self._prepare_resources(session, semaphore)
         try:
-            if session is None:
-                session = aiohttp.ClientSession(headers=self.headers)
-                should_close_session = True     # 需要最后手动释放session
-            if semaphore is None:
-                semaphore = asyncio.Semaphore(10)   # 默认并发数
             novel_id = (url.split('/')[-2] if url.endswith('/') else url.split('/')[-1]).replace('.html', '')
             async with semaphore:
                 async with session.get(url) as response:
@@ -117,14 +124,8 @@ class UjNovelCrawler(BaseNovelCrawler):
             session: aiohttp.ClientSession = None,
             semaphore: asyncio.Semaphore = None
     ) -> list[tuple[str, str]]:
-        # 是否在内部创建session，用于管理系统资源
-        should_close_session = False
+        session, semaphore, should_close_session = await self._prepare_resources(session, semaphore)
         try:
-            if session is None:
-                session = aiohttp.ClientSession(headers=self.headers)
-                should_close_session = True     # 需要最后手动释放session
-            if semaphore is None:
-                semaphore = asyncio.Semaphore(10)   # 默认并发数
             async with semaphore:
                 async with session.get(url) as response:
                     response.encoding = 'utf-8'
@@ -158,14 +159,8 @@ class UjNovelCrawler(BaseNovelCrawler):
             session: aiohttp.ClientSession = None,
             semaphore: asyncio.Semaphore = None
     ) -> str:
-        # 是否在内部创建session，用于管理系统资源
-        should_close_session = False
+        session, semaphore, should_close_session = await self._prepare_resources(session, semaphore)
         try:
-            if session is None:
-                session = aiohttp.ClientSession(headers=self.headers)
-                should_close_session = True     # 需要最后手动释放session
-            if semaphore is None:
-                semaphore = asyncio.Semaphore(10)   # 默认并发数
             async with semaphore:
                 async with session.get(chapter_url) as response:
                     response.encoding = 'utf-8'
@@ -200,14 +195,8 @@ class UjNovelCrawler(BaseNovelCrawler):
         if tag not in self.tags_list:
             print(f"{tag} 不在标签列表中")
             return []
-        # 是否在内部创建session，用于管理系统资源
-        should_close_session = False
+        session, semaphore, should_close_session = await self._prepare_resources(session, semaphore)
         try:
-            if session is None:
-                session = aiohttp.ClientSession(headers=self.headers)
-                should_close_session = True     # 需要最后手动释放session
-            if semaphore is None:
-                semaphore = asyncio.Semaphore(10)   # 默认并发数
             tag_url = self.base_url + tag + '/'
             novel_links = []
             # 异步获取所有分页链接
@@ -257,14 +246,8 @@ class UjNovelCrawler(BaseNovelCrawler):
             semaphore: asyncio.Semaphore = None
     ) -> list[tuple[str, str, str]]:
         search_url = self.base_url + 'author/' + author
-        # 是否在内部创建session，用于管理系统资源
-        should_close_session = False
+        session, semaphore, should_close_session = await self._prepare_resources(session, semaphore)
         try:
-            if session is None:
-                session = aiohttp.ClientSession(headers=self.headers)
-                should_close_session = True     # 需要最后手动释放session
-            if semaphore is None:
-                semaphore = asyncio.Semaphore(10)   # 默认并发数
             async with semaphore:
                 async with session.get(search_url) as response:
                     text = await response.text()
@@ -304,14 +287,8 @@ class UjNovelCrawler(BaseNovelCrawler):
             'searchkey': keyword
         }
         result = []
-        # 是否在内部创建session，用于管理系统资源
-        should_close_session = False
+        session, semaphore, should_close_session = await self._prepare_resources(session, semaphore)
         try:
-            if session is None:
-                session = aiohttp.ClientSession(headers=self.headers)
-                should_close_session = True     # 需要最后手动释放session
-            if semaphore is None:
-                semaphore = asyncio.Semaphore(10)   # 默认并发数
             async with semaphore:
                 async with session.post(search_url, data=req_body) as response:
                     text = await response.text()
@@ -346,14 +323,8 @@ class UjNovelCrawler(BaseNovelCrawler):
             session: aiohttp.ClientSession = None,
             semaphore: asyncio.Semaphore = None
     ):
-        # 是否在内部创建session，用于管理系统资源
-        should_close_session = False
+        session, semaphore, should_close_session = await self._prepare_resources(session, semaphore)
         try:
-            if session is None:
-                session = aiohttp.ClientSession(headers=self.headers)
-                should_close_session = True     # 需要最后手动释放session
-            if semaphore is None:
-                semaphore = asyncio.Semaphore(10)   # 默认并发数
             async with semaphore:
                 novel_detail = await self.get_novel_metadata_async(url, session, semaphore)
                 novel_catalog_url = novel_detail.catalog_url
